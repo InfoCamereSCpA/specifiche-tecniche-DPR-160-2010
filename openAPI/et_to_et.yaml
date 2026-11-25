@@ -306,45 +306,71 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+      headers:
+        Agid-JWT-Signature: { $ref: "#/components/headers/Agid-JWT-Signature" }
 
     NotFound:
       description: Risorsa non trovata
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+      headers:
+        Agid-JWT-Signature: { $ref: "#/components/headers/Agid-JWT-Signature" }
 
     Conflict:
       description: conflitto sulla risorsa, la richiesta non può essere elaborata a causa di un conflitto nello stato coerente della risorsa
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+      headers:
+        Agid-JWT-Signature: { $ref: "#/components/headers/Agid-JWT-Signature" }
 
     PreconditionFailed:
       description: Precondizione fallita (es. If-Match)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
       headers:
         Agid-JWT-Signature: { $ref: "#/components/headers/Agid-JWT-Signature" }
 
     PreconditionRequired:
       description: Precondizione richiesta (es. If-Match mancante)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+      headers:
+        Agid-JWT-Signature: { $ref: "#/components/headers/Agid-JWT-Signature" }
 
     RangeNotSatisfiable:
       description: Range non soddisfacibile
+      content:
+          application/json:
+              schema:
+                  $ref: "#/components/schemas/Error"
       headers:
-        Content-Range:
-          description: Range atteso
-          schema: { type: string, example: "bytes */47022" }
+          Agid-JWT-Signature:
+              $ref: "#/components/headers/Agid-JWT-Signature"
+          Content-Range:
+              description: lunghezza attuale della rappresentazione selezionata
+              schema:
+                  type: string
+                  example: bytes */47022
 
     ServerError:
       description: Errore interno
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+      headers:
+        Agid-JWT-Signature: { $ref: "#/components/headers/Agid-JWT-Signature" }
 
     ServiceUnavailable:
       description: Servizio non disponibile
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+      headers:
+        Agid-JWT-Signature: { $ref: "#/components/headers/Agid-JWT-Signature" }
 
   # ---------- SCHEMAS ----------
   schemas:
@@ -563,8 +589,6 @@ components:
       oneOf:
         - $ref: "#/components/schemas/NegativeOutcomeRequired"
         - $ref: "#/components/schemas/PositiveOutcome"
-      discriminator:
-        propertyName: conclusions_type
 
     NegativeOutcomeRequired:
       type: object
@@ -596,12 +620,23 @@ components:
         hash: { type: string }
         alg_hash: { type: string, enum: [ S256, S384, S512 ] }
 
+    BaseMessage:
+      type: object
+      required:
+        - cui
+        - instance_descriptor_version
+      properties:
+        cui:
+          $ref: "#/components/schemas/cui"
+        instance_descriptor_version:
+          type: string
+
     NotifyMessage:
       type: object
-      required: [ cui, instance_descriptor_version, event ]
+      allOf:
+        - $ref: "#/components/schemas/BaseMessage"
+      required: [ event ]
       properties:
-        cui: { $ref: "#/components/schemas/cui" }
-        instance_descriptor_version: { type: string }
         event:
           type: string
           enum:
@@ -614,7 +649,9 @@ components:
 
     TransferOutcomeNotifyMessage:
       type: object
-      required: [ cui, instance_descriptor_version, event, document ]
+      allOf:
+        - $ref: "#/components/schemas/BaseMessage"
+      required: [ event, document ]
       properties:
         cui: { $ref: "#/components/schemas/cui" }
         instance_descriptor_version: { type: string }
@@ -628,14 +665,14 @@ components:
 
     CdssNotifyMessage:
       allOf:
-        - $ref: "#/components/schemas/NotifyMessage"
+        - $ref: "#/components/schemas/BaseMessage"
         - type: object
           required: [ event, cdss_channel, cdss_convocation ]
           properties:
             event: 
               type: string
               pattern: >-
-                        ^cdss_convened|endo_cdss_convened_from_[0-9]{1,10}$ 
+                        ^cdss_convened|endo_cdss_convened_from_[0-9]{1,10}$
             document: { $ref: "#/components/schemas/__doc_pdf_base" }
             cdss_channel: { type: string }
             cdss_convocation: { type: string, format: date }
